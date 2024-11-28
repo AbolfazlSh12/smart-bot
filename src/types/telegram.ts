@@ -1,22 +1,42 @@
-export interface TelegramUser {
-	id: number;
-	first_name: string;
-	last_name?: string;
-	username?: string;
+interface TelegramUpdate {
+	update_id: number;
+	message?: {
+		message_id: number;
+		from: {
+			id: number;
+			first_name: string;
+			username?: string;
+		};
+		chat: {
+			id: number;
+			type: string;
+		};
+		text?: string;
+	};
 }
 
-export interface TelegramChat {
-	id: number;
-	type: string;
+interface TelegramResponse {
+	chat_id: number;
+	text: string;
 }
 
-export interface TelegramMessage {
-	message_id: number;
-	from?: TelegramUser;
-	chat: TelegramChat;
-	text?: string;
-}
-
-export interface TelegramUpdate {
-	message?: TelegramMessage;
+interface GroqChatResponse {
+	id: string;
+	object: string;
+	created: number;
+	model: string;
+	choices: Array<{
+		index: number;
+		message: {
+			role: string;
+			content: string;
+		};
+		logprobs: null;
+		finish_reason: string;
+	}>;
+	usage: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
 }
