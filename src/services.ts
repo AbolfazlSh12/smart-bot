@@ -46,14 +46,8 @@ export class GroqClient {
 			body: JSON.stringify({
 				model: 'llama3-8b-8192',
 				messages: [
-					{
-						role: 'system',
-						content: this.systemPrompt,
-					},
-					{
-						role: 'user',
-						content: userMessage,
-					},
+					{ role: 'system', content: this.systemPrompt },
+					{ role: 'user', content: userMessage },
 				],
 				temperature: 0.7,
 				max_tokens: 800,

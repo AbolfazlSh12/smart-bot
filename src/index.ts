@@ -1,4 +1,4 @@
-import { TelegramClient, GroqClient } from './services/telegram';
+import { TelegramClient, GroqClient } from './services';
 
 export interface Env {
 	BOT_TOKEN: string;
