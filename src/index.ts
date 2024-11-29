@@ -1,13 +1,15 @@
-import { TelegramClient, GroqClient } from './services';
+import { TelegramClient } from './services/telegram';
+import { GroqClient } from './services/groq';
+import { ConversationManager } from './services/conversation';
+import { TelegramUpdate } from './types/telegram';
 
 export interface Env {
 	BOT_TOKEN: string;
 	GROQ_API_KEY: string;
 }
 
-// Simple in-memory conversation history (note: this will reset when worker restarts)
-const conversationHistory = new Map<number, Array<{ role: string; content: string }>>();
-const MAX_HISTORY_LENGTH = 10; // Keep last 10 messages
+// Initialize conversation manager
+const conversationManager = new ConversationManager();
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
@@ -27,49 +29,25 @@ export default {
 			const chatId = update.message.chat.id;
 			const text = update.message.text;
 
-			// Initialize or get conversation history
-			if (!conversationHistory.has(chatId)) {
-				conversationHistory.set(chatId, []);
-			}
-			const history = conversationHistory.get(chatId)!;
-
 			let responseText = '';
 
 			if (text.startsWith('/start')) {
 				responseText =
 					'Hello! 👋 I am your AI-powered Telegram bot. I can help you with various tasks, answer questions, and engage in conversations. Feel free to ask me anything!';
-				// Clear history on /start
-				history.length = 0;
+				conversationManager.clearHistory(chatId);
 			} else if (text.startsWith('/clear')) {
 				responseText = "Conversation history cleared! Let's start fresh.";
-				history.length = 0;
+				conversationManager.clearHistory(chatId);
 			} else {
 				try {
-					// Show typing indicator
-					await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendChatAction`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							chat_id: chatId,
-							action: 'typing',
-						}),
-					});
+					await telegram.sendTypingAction(chatId);
 
-					// Add user message to history
-					history.push({ role: 'user', content: text });
-
-					// Get AI response with history
-					responseText = await groq.getChatCompletionWithHistory(history);
+					// Add user message to history and get AI response
+					conversationManager.addMessage(chatId, { role: 'user', content: text });
+					responseText = await groq.getChatCompletionWithHistory(conversationManager.getHistory(chatId));
 
 					// Add AI response to history
-					history.push({ role: 'assistant', content: responseText });
-
-					// Trim history if too long
-					if (history.length > MAX_HISTORY_LENGTH) {
-						history.splice(0, 2); // Remove oldest QA pair
-					}
+					conversationManager.addMessage(chatId, { role: 'assistant', content: responseText });
 				} catch (error) {
 					console.error('Error getting AI response:', error);
 					responseText = 'Sorry, I encountered an error while processing your message. Please try again later.';
@@ -77,10 +55,6 @@ export default {
 			}
 
 			await telegram.sendMessage(chatId, responseText);
-
-			// Update conversation history
-			conversationHistory.set(chatId, history);
-
 			return new Response('OK', { status: 200 });
 		} catch (error) {
 			console.error('Error processing request:', error);

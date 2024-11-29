@@ -1,4 +1,5 @@
-interface TelegramUpdate {
+// src/types/telegram.ts
+export interface TelegramUpdate {
 	update_id: number;
 	message?: {
 		message_id: number;
@@ -15,12 +16,13 @@ interface TelegramUpdate {
 	};
 }
 
-interface TelegramResponse {
+export interface TelegramResponse {
 	chat_id: number;
 	text: string;
 }
 
-interface GroqChatResponse {
+// src/types/groq.ts
+export interface GroqChatResponse {
 	id: string;
 	object: string;
 	created: number;
@@ -39,4 +41,9 @@ interface GroqChatResponse {
 		completion_tokens: number;
 		total_tokens: number;
 	};
+}
+
+export interface ChatMessage {
+	role: string;
+	content: string;
 }
